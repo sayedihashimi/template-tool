@@ -41,7 +41,6 @@ function ValidateBaseTemplateId(){
         $errorFound = $false
         # check that the BaseTemplateId attribute value has a corresponding BaseElement in the same file
         $baseTemplateIdsFromTemplate= ($template.TemplateDefinition.UI.Template.BaseTemplateID)
-        # $foundElement = $proj.Project.ItemGroup.Loc | Where-Object {$_.Include.Contains($xmlPath)}
 
         foreach($baseTempId in $baseTemplateIdsFromTemplate){
             # check to see that there is a corresponding value for BaseTemplates.BaseTemplate.ID
@@ -52,28 +51,52 @@ function ValidateBaseTemplateId(){
                 $baseTempErrors += $msg
                 $msg | Write-Error
             }
-        }
-
-        
+        }   
     }
     End{
-        if($errorFound){
-            return $baseTempErrors
+        if($errorFound){ return $baseTempErrors }
+        else{ "no errors in ValidateBaseTemplateId" | Write-Host }
+        "ValidateBaseTemplateId finished" | Write-Verbose 
+    }
+}
+function ValidateUnitTestIdFromUI(){
+    Param(
+        [Parameter(Mandatory=$true)]
+        [xml]$template
+    )
+
+    Begin{ "ValidateUnitTestIdFromUI starting" | Write-Verbose }
+    
+    Process{
+        $unitErrors = @()
+        $errorsFound = $false
+        $unitTestIdFromUI = $template.TemplateDefinition.UI.Template.UnitTest.DefaultBaseTemplateId
+        foreach($unitTestId in $unitTestIdFromUI){
+            $foundUnitTestId = $template.TemplateDefinition.BaseTemplates.BaseTemplate.ID | Where-Object { [string]::Compare($_,$unitTestId,$true) -eq 0}
+            if(!$foundUnitTestId){
+                $errorsFound = $true
+                $msg = ("Missing BaseTemplates.BaseTemplate.ID for UI.Template.BaseTemplateID [{0}]" -f $unitTestId)
+                $unitErrors += $msg
+                $msg | Write-Error
+            }
         }
+    }
+
+    End{
+        if($errorsFound){return $unitErrors}
+        else{ "no unit test errors found" | Write-Host }
+        "ValidateUnitTestIdFromUI finished" | Write-Verbose 
     }
 }
 
 ####### End functions ####### 
-
 if(Get-Module xml-helpers){
     "Removing xml-helpers module so that it can be imported again" | Write-Verbose
     Remove-Module xml-helpers
 }
 # Importing modules
 Import-Module .\xml-helpers.psm1
-
 ################### Begin script ###################
-
 if(!(Test-Path $templatePath)){
     "Template file not found at [{0}]" -f $templatePath | Write-Error
     exit 1
@@ -86,16 +109,32 @@ if(!$isValid){
     "The file [{0}] is not valid based on the given xsd [{1}]" -f $templatePath, $templateXsdPath | Write-Verbose
     exit 1
 }
-
-"isValid: {0}" -f $isValid | Write-Host -ForegroundColor Yellow -BackgroundColor Black
+else{ "The file is valid based on the xsd provided" | Write-Host }
 
 $allErrors = @()
 [xml]$template = Get-Content $templatePath
 
 $baseErrors = ValidateBaseTemplateId -template $template
-if($baseErrors){
-    $allErrors += $baseErrors
-}
+$allErrors += $baseErrors
+
+$unitErrors = ValidateUnitTestIdFromUI -template $template
+$allErrors += $unitErrors
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Remove-Module xml-helpers
 
