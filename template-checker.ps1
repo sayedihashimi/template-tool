@@ -27,7 +27,6 @@ function IsTemplateXmlValid(){
     $isValid = (Test-Xml -xmlFile $templatePath -schemaFile $templateXsdPath)
     return $isValid
 }
-
 function ValidateBaseTemplateId(){
     Param(
         [Parameter(Mandatory=$true)]
@@ -90,7 +89,6 @@ function ValidateUnitTestIdFromUI(){
         "ValidateUnitTestIdFromUI finished" | Write-Verbose 
     }
 }
-
 function ValidateVsTemplateExistsForBaseTemplate(){
     param(
         [Parameter(Mandatory=$true)]
@@ -98,7 +96,7 @@ function ValidateVsTemplateExistsForBaseTemplate(){
         [Parameter(Mandatory=$true)]
         [string]$templatePath
     )
-    begin{ "ValidateUnitTestIdFromUI starting" | Write-Verbose }
+    begin{ "ValidateVsTemplateExistsForBaseTemplate starting" | Write-Verbose }
     process{
         $tempErrors = @()
         # check that the folder exists referred to by 
@@ -122,7 +120,7 @@ function ValidateVsTemplateExistsForBaseTemplate(){
     end{
         if($errorsFound){return $tempErrors}
         else{ "All .vstemplate files fond for BaseTemplates" | Write-Host -ForegroundColor Green }
-        "ValidateUnitTestIdFromUI finished" | Write-Verbose 
+        "ValidateVsTemplateExistsForBaseTemplate finished" | Write-Verbose 
     }
 }
 
