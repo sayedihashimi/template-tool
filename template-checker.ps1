@@ -123,7 +123,39 @@ function ValidateVsTemplateExistsForBaseTemplate(){
         "ValidateVsTemplateExistsForBaseTemplate finished" | Write-Verbose 
     }
 }
+function ValidateReferencedRules(){
+    param(
+        [Parameter(Mandatory=$true)]
+        [xml]$template
+    )
+    begin{"Validating referenced rules" | Write-Verbose}
+    process{        
+        # check that referrenced rules are defined in the file, skip ones that start with globabl
+        $ruleErrors = @()
+        $allReferencedRules = @()
+        $allReferencedRules += ($template.TemplateDefinition.BaseTemplates.BaseTemplate.ApplyRules.RunRule.RuleId)
+        $allReferencedRules += ($template.TemplateDefinition.BaseTemplates.BaseTemplate.ApplyRules.ApplyRules.RunRule.RuleId)
+        #de-dup
+        $allReferencedRules = ($allReferencedRules | select -Unique)
+        foreach($refRule in $allReferencedRules){
+            if($refRule.StartsWith("global")){ continue }
 
+            $foundRule = $template.TemplateDefinition.Rules.Rule.ID | Where-Object { [string]::Compare($_,$refRule,$true) -eq 0}
+            "Checking for rule [{0}]" -f $refRule | Write-Verbose
+            if(!$foundRule){
+                $errorsFound = $true
+                $msg = ("Missing referenced rule [{0}]" -f $refRule)
+                $ruleErrors += $msg
+                $msg | Write-Error
+            }
+        }
+    }
+    end{
+        if($errorsFound){return $ruleErrors}
+        else{ "All referenced rules found" | Write-Host -ForegroundColor Green}
+        "Validating referenced rules finished" | Write-Verbose 
+    }
+}
 ####### End functions ####### 
 if(Get-Module xml-helpers){
     "Removing xml-helpers module so that it can be imported again" | Write-Verbose
@@ -158,10 +190,8 @@ $allErrors += $unitErrors
 $tempErrors = ValidateVsTemplateExistsForBaseTemplate -template $template -templatePath $templatePath
 $allErrors += $unitErrors
 
-
-
-
-
+$ruleErrors = ValidateReferencedRules -template $template
+$allErrors += $ruleErrors
 
 
 
