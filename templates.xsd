@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="TemplateDefinition">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="UI">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element maxOccurs="unbounded" name="Template">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Icon" type="xs:string" minOccurs="0"  />
+                    <xs:element name="PreviewImage" type="xs:string" minOccurs="0"  />
+                    <xs:element name="Summary" type="xs:string" minOccurs="0" />
+                    <xs:element name="Description" type="xs:string" minOccurs="0" />
+                    <xs:element name="UnitTest">
+                      <xs:complexType>
+                        <xs:attribute name="DefaultBaseTemplateID" type="xs:string" use="required" />
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Options">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="Authentication">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="NoAuth" minOccurs="0" />
+                                <xs:element minOccurs="0" name="WindowsAuth" />
+                                <xs:element minOccurs="0" name="IndividualAuth" />
+                                <xs:element minOccurs="0" name="OrgAuth" />
+                              </xs:sequence>
+                              <xs:attribute name="Default" type="xs:string" use="required" />
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element name="TemplateReferences">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="WebForms">
+                                  <xs:complexType>
+                                    <xs:attribute name="Required" type="xs:boolean" use="optional" />
+                                  </xs:complexType>
+                                </xs:element>
+                                <xs:element name="MVC" minOccurs="0" />
+                                <xs:element name="WebAPI" minOccurs="0" />
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="Name" type="xs:string" use="required" />
+                  <xs:attribute name="BaseTemplateID" type="xs:string" use="required" />
+                  <xs:attribute name="Order" type="xs:unsignedByte" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="BaseTemplates">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element maxOccurs="unbounded" name="BaseTemplate">
+                <xs:complexType mixed="true">
+                  <xs:sequence minOccurs="0">
+                    <xs:element maxOccurs="unbounded" name="ApplyRules">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element minOccurs="0" maxOccurs="unbounded" name="ApplyRules">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element maxOccurs="unbounded" name="RunRule">
+                                  <xs:complexType>
+                                    <xs:attribute name="RuleID" type="xs:string" use="required" />
+                                    <xs:attribute name="Option" type="xs:string" use="optional" />
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                              <xs:attribute name="Option" type="xs:string" />
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element minOccurs="0" maxOccurs="unbounded" name="RunRule">
+                            <xs:complexType>
+                              <xs:attribute name="RuleID" type="xs:string" use="required" />
+                              <xs:attribute name="Option" type="xs:string" use="optional" />
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="Option" type="xs:string" use="optional" />
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="ID" type="xs:string" use="required" />
+                  <xs:attribute name="VSTemplatePath" type="xs:string" use="required" />
+                  <xs:attribute name="NugetPackageKey" type="xs:string" use="optional" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Rules">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element maxOccurs="unbounded" name="Rule">
+                <xs:complexType mixed="true">
+                  <xs:sequence minOccurs="0">
+                    <xs:choice maxOccurs="unbounded">
+                      <xs:element maxOccurs="unbounded" name="AddReference">
+                        <xs:complexType>
+                          <xs:attribute name="Name" type="xs:string" use="required" />
+                        </xs:complexType>
+                      </xs:element>
+                      <xs:element name="ReplaceFile">
+                        <xs:complexType>
+                          <xs:attribute name="Source" type="xs:string" use="required" />
+                          <xs:attribute name="Destination" type="xs:string" use="required" />
+                        </xs:complexType>
+                      </xs:element>
+                      <xs:element maxOccurs="unbounded" name="AddFile">
+                        <xs:complexType>
+                          <xs:attribute name="Source" type="xs:string" use="required" />
+                          <xs:attribute name="Destination" type="xs:string" use="required" />
+                        </xs:complexType>
+                      </xs:element>
+                      <xs:element name="AddNugetPackage">
+                        <xs:complexType>
+                          <xs:attribute name="ID" type="xs:string" use="required" />
+                          <xs:attribute name="Version" type="xs:string" use="required" />
+                          <xs:attribute name="NugetPackageKey" type="xs:string" use="required" />
+                        </xs:complexType>
+                      </xs:element>
+                      <xs:element name="AddFolder">
+                        <xs:complexType>
+                          <xs:attribute name="Name" type="xs:string" use="required" />
+                        </xs:complexType>
+                      </xs:element>
+                    </xs:choice>
+                  </xs:sequence>
+                  <xs:attribute name="ID" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="Name" type="xs:string" use="required" />
+      <xs:attribute name="Order" type="xs:unsignedByte" use="required" />
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
