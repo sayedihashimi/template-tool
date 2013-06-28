@@ -28,6 +28,41 @@ function IsTemplateXmlValid(){
     return $isValid
 }
 
+function ValidateBaseTemplateId(){
+    Param(
+        [Parameter(Mandatory=$true)]
+        [xml]$template
+    )
+    
+    Begin{"ValidateBaseTemplateId starting" | Write-Verbose }
+
+    Process{
+        $baseTempErrors = @()
+        $errorFound = $false
+        # check that the BaseTemplateId attribute value has a corresponding BaseElement in the same file
+        $baseTemplateIdsFromTemplate= ($template.TemplateDefinition.UI.Template.BaseTemplateID)
+        # $foundElement = $proj.Project.ItemGroup.Loc | Where-Object {$_.Include.Contains($xmlPath)}
+
+        foreach($baseTempId in $baseTemplateIdsFromTemplate){
+            # check to see that there is a corresponding value for BaseTemplates.BaseTemplate.ID
+            $foundBaseTempId = $template.TemplateDefinition.BaseTemplates.BaseTemplate.ID | Where-Object { [string]::Compare($_,$baseTempId,$true) -eq 0}
+            if(!$foundBaseTempId){
+                $errorFound = $true
+                $msg = ("Missing BaseTemplates.BaseTemplate.ID value for UI.Template.BaseTemplateID [{0}]" -f $baseTempId)
+                $baseTempErrors += $msg
+                $msg | Write-Error
+            }
+        }
+
+        
+    }
+    End{
+        if($errorFound){
+            return $baseTempErrors
+        }
+    }
+}
+
 ####### End functions ####### 
 
 if(Get-Module xml-helpers){
@@ -44,8 +79,6 @@ if(!(Test-Path $templatePath)){
     exit 1
 }
 
-[xml]$template = Get-Content $templatePath
-
 # first run it through the XSD, if it doesn't pass validation we should just quit
 $isValid = (IsTemplateXmlValid -templatePath $templatePath -templateXsdPath $templateXsdPath)
 if(!$isValid){
@@ -56,8 +89,35 @@ if(!$isValid){
 
 "isValid: {0}" -f $isValid | Write-Host -ForegroundColor Yellow -BackgroundColor Black
 
+$allErrors = @()
+[xml]$template = Get-Content $templatePath
 
-
-
+$baseErrors = ValidateBaseTemplateId -template $template
+if($baseErrors){
+    $allErrors += $baseErrors
+}
 
 Remove-Module xml-helpers
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
