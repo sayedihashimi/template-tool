@@ -103,7 +103,6 @@ function ValidateVsTemplateExistsForBaseTemplate(){
         $baseTemplatePaths = $template.TemplateDefinition.BaseTemplates.BaseTemplate.VSTemplatePath
         # remove duplicates
         $baseTemplatePaths = ($baseTemplatePaths | select -Unique)
-        $templateDirectory = 
         foreach($baseTempPath in $baseTemplatePaths){
             # ' the file should be next to templates.xml in BaseTmplates\<PATH>
             # Split('\')[1] at the end because the folder in the template path is evidenlty ignored
@@ -123,6 +122,36 @@ function ValidateVsTemplateExistsForBaseTemplate(){
         "ValidateVsTemplateExistsForBaseTemplate finished" | Write-Verbose 
     }
 }
+
+function ValidateSourFileRefs(){
+    param(
+        [Parameter(Mandatory=$true)]
+        [xml]$template,
+        [Parameter(Mandatory=$true)]
+        [string]$templatePath
+    )
+    begin{ "Validating source file references" | Write-Verbose }
+    process{
+        $addRemoveFileErrors = @()
+        $sourcFileReferences=($template.TemplateDefinition.Rules.Rule.AddFile.Source + $template.TemplateDefinition.Rules.Rule.AddFile.Source)
+        foreach($fileRef in $sourcFileReferences){
+            $expectedPath = (Join-Path (Get-Item $templatePath).Directory.FullName -ChildPath $fileRef)
+            "Checking for source file at [{0}]" -f $expectedPath | Write-Verbose
+            if(!(Test-Path $expectedPath)){
+                $errorsFound = $true
+                $msg = ("Expected to find sourcefile at [{0}] but it was not found" -f $expectedPath)
+                $addRemoveFileErrors += $msg
+                $msg | Write-Error
+            }
+        }
+    }
+    end{
+        if($errorsFound){return $addRemoveFileErrors}
+        else{ "All spource files found for AddFile/ReplaceFile" | Write-Host -ForegroundColor Green }
+        "ValidateVsTemplateExistsForBaseTemplate finished" | Write-Verbose 
+    }
+}
+
 function ValidateReferencedRules(){
     param(
         [Parameter(Mandatory=$true)]
@@ -193,9 +222,12 @@ $allErrors += $unitErrors
 $ruleErrors = ValidateReferencedRules -template $template
 $allErrors += $ruleErrors
 
+$allErrors += ValidateSourFileRefs -template $template -templatePath $templatePath
 
-
-
+if($allErrors.Count -gt 0){
+    "There were errors" | Write-Error
+    $allErrors | Write-Host -BackgroundColor Black -ForegroundColor Yellow
+}
 
 
 Remove-Module xml-helpers
