@@ -122,7 +122,6 @@ function ValidateVsTemplateExistsForBaseTemplate(){
         "ValidateVsTemplateExistsForBaseTemplate finished" | Write-Verbose 
     }
 }
-
 function ValidateSourFileRefs(){
     param(
         [Parameter(Mandatory=$true)]
@@ -148,10 +147,9 @@ function ValidateSourFileRefs(){
     end{
         if($errorsFound){return $addRemoveFileErrors}
         else{ "All spource files found for AddFile/ReplaceFile" | Write-Host -ForegroundColor Green }
-        "ValidateVsTemplateExistsForBaseTemplate finished" | Write-Verbose 
+        "Done validating source files" | Write-Verbose 
     }
 }
-
 function ValidateReferencedRules(){
     param(
         [Parameter(Mandatory=$true)]
@@ -210,23 +208,15 @@ else{ "The file is valid based on the xsd provided" | Write-Host -ForegroundColo
 $allErrors = @()
 [xml]$template = Get-Content $templatePath
 
-$baseErrors = ValidateBaseTemplateId -template $template
-$allErrors += $baseErrors
-
-$unitErrors = ValidateUnitTestIdFromUI -template $template
-$allErrors += $unitErrors
-
-$tempErrors = ValidateVsTemplateExistsForBaseTemplate -template $template -templatePath $templatePath
-$allErrors += $unitErrors
-
-$ruleErrors = ValidateReferencedRules -template $template
-$allErrors += $ruleErrors
-
+$allErrors += ValidateBaseTemplateId -template $template
+$allErrors += ValidateUnitTestIdFromUI -template $template
+$allErrors += ValidateVsTemplateExistsForBaseTemplate -template $template -templatePath $templatePath
+$allErrors +=  ValidateReferencedRules -template $template
 $allErrors += ValidateSourFileRefs -template $template -templatePath $templatePath
 
 if($allErrors.Count -gt 0){
     "There were errors" | Write-Error
-    $allErrors | Write-Host -BackgroundColor Black -ForegroundColor Yellow
+    $allErrors | Write-Host -BackgroundColor Black -ForegroundColor Red
 }
 
 
