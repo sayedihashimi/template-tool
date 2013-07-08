@@ -146,11 +146,12 @@ function ValidateVsTemplateExistsForBaseTemplate(){
         foreach($baseTempPath in $baseTemplatePaths){
             # ' the file should be next to templates.xml in BaseTmplates\<PATH>
             # Split('\')[1] at the end because the folder in the template path is evidenlty ignored
-            $expectedFolderPath = Join-Path -Path (Get-Item $templatePath).Directory.FullName -ChildPath ("BaseTemplates\{0}" -f $baseTempPath.Split('\')[1])
-            "Checking for .vstemplate file at [{0}]" -f $expectedFolderPath | Write-Verbose
-            if(!(Test-Path $expectedFolderPath)){
+            # TODO: This needs to be different if checking the source file versus the file in ProgramFiles
+            $expectedVsTemplatePath = Join-Path -Path (Get-Item $templatePath).Directory.FullName -ChildPath ("{0}" -f $baseTempPath)
+            "Checking for .vstemplate file at [{0}]" -f $expectedVsTemplatePath | Write-Verbose
+            if(!(Test-Path $expectedVsTemplatePath)){
                 $errorsFound = $true
-                $msg = ("Expected to find .vstemplate file at [{0}] but it was not found" -f $expectedFolderPath)
+                $msg = ("Expected to find .vstemplate file at [{0}] but it was not found" -f $expectedVsTemplatePath)
                 $tempErrors += $msg
                 $msg | Write-Error
             }
