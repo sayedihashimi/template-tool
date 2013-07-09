@@ -1,11 +1,18 @@
 ﻿Param(
   [Parameter(Mandatory=$true)]
   [string]$templatePath,
-  [Parameter(Mandatory=$true)]
-  [string]$templateXsdPath
+  
+  [string]$templateXsdPath 
 )
 
 ######## Begin functions ######## 
+
+function Get-ScriptDirectory
+{
+	$Invocation = (Get-Variable MyInvocation -Scope 1).Value
+	Split-Path $Invocation.MyCommand.Path
+}
+
 # taken from http://stackoverflow.com/a/16737772/105999
 # note this only works for XML files which do not have an xmlns declaration
 function Test-Xml {
@@ -147,11 +154,11 @@ function ValidateVsTemplateExistsForBaseTemplate(){
             # ' the file should be next to templates.xml in BaseTmplates\<PATH>
             # Split('\')[1] at the end because the folder in the template path is evidenlty ignored
             # TODO: This needs to be different if checking the source file versus the file in ProgramFiles
-            $expectedVsTemplatePath = Join-Path -Path (Get-Item $templatePath).Directory.FullName -ChildPath ("{0}" -f $baseTempPath)
-            "Checking for .vstemplate file at [{0}]" -f $expectedVsTemplatePath | Write-Verbose
-            if(!(Test-Path $expectedVsTemplatePath)){
+            $expectedFolderPath = Join-Path -Path (Get-Item $templatePath).Directory.FullName -ChildPath ("{0}" -f $baseTempPath.Split('\'))
+            "Checking for .vstemplate file at [{0}]" -f $expectedFolderPath | Write-Verbose
+            if(!(Test-Path $expectedFolderPath)){
                 $errorsFound = $true
-                $msg = ("Expected to find .vstemplate file at [{0}] but it was not found" -f $expectedVsTemplatePath)
+                $msg = ("Expected to find .vstemplate file at [{0}] but it was not found" -f $expectedFolderPath)
                 $tempErrors += $msg
                 $msg | Write-Error
             }
@@ -232,6 +239,10 @@ function ValidateReferencedRules(){
 # Importing modules
 #Import-Module .\xml-helpers.psm1
 ################### Begin script ###################
+if(!$templateXsdPath){
+    $templateXsdPath = (Join-Path -Path (Get-ScriptDirectory) -ChildPath 'templates.xsd')
+}
+
 if(!(Test-Path $templatePath)){
     "Template file not found at [{0}]" -f $templatePath | Write-Error
     exit 1
