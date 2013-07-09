@@ -2,7 +2,9 @@
   [Parameter(Mandatory=$true)]
   [string]$templatePath,
   
-  [string]$templateXsdPath 
+  [string]$templateXsdPath,
+
+  [switch]$reportNugetPackages
 )
 
 ######## Begin functions ######## 
@@ -231,6 +233,26 @@ function ValidateReferencedRules(){
         "Validating referenced rules finished" | Write-Verbose 
     }
 }
+function HasNugetPkgBeenAddedToArray(){
+    param(
+        [Parameter(Mandatory=$true)]
+        $allNugetPackages,
+        [Parameter(Mandatory=$true)]
+        [hashtable]$nugetPkg
+    )
+
+    if($allNugetPackages.Count -le 0){
+        return $false
+    }
+
+    # there is probably a better way to do this
+    if(($theArray | Where-Object {$_.ID -eq $nugetPkg.ID -and $_.Version -eq $nugetPkg.Version -and $_.NugetPackageKey -eq $nugetPkg.NugetPackageKey})){
+        return $true
+    }
+    else{
+        return $false
+    }
+}
 ####### End functions ####### 
 #if(Get-Module xml-helpers){
 #    "Removing xml-helpers module so that it can be imported again" | Write-Verbose
@@ -239,6 +261,10 @@ function ValidateReferencedRules(){
 # Importing modules
 #Import-Module .\xml-helpers.psm1
 ################### Begin script ###################
+
+
+
+
 if(!$templateXsdPath){
     $templateXsdPath = (Join-Path -Path (Get-ScriptDirectory) -ChildPath 'templates.xsd')
 }
@@ -259,6 +285,50 @@ else{ "The file is valid based on the xsd provided" | Write-Host -ForegroundColo
 
 $allErrors = @()
 [xml]$template = Get-Content $templatePath
+
+
+if($reportNugetPackages){
+    $allNugetPackages = @()
+    # for templates.xml we can get NuGet packages from TemplateDefinition.Rules.Rule.AddNuGetPackage
+    $nugetPkgFromTemplatesXml = ($template.TemplateDefinition.Rules.Rule.AddNugetPackage)
+    foreach($nugetPkg in $nugetPkgFromTemplatesXml){
+        if(!($nugetPkg)){
+            continue
+        }
+
+        $info = @{}
+        $info.Source = $templatePath
+        $info.ID = $nugetPkg.ID
+        $info.Version = $nugetPkg.Version
+        $info.NugetPackageKey = $nugetPkg.NugetPackageKey
+
+        # if the item has already been added skip it
+
+        if(!(HasNugetPkgBeenAddedToArray -allNugetPackages $allNugetPackages -nugetPkg $info)){
+            "Adding nuget package [{0}{1}] because its a duplicate" -f $info.ID, $info.Version | Write-Verbose
+            $allNugetPackages += $info
+        }
+        else{
+            "Skipping nuget package [{0}{1}] because its a duplicate" -f $info.ID, $info.Version | Write-Verbose
+        }
+    }
+
+    # print out all the nuget packages found
+    $seperator = ","
+    "ID$seperator Version$seperator NugetPackageKey" | Write-Host
+    
+    "Count before unique: [{0}]" -f $allNugetPackages.Count | Write-Host
+    
+    foreach($nugetPkg in $allNugetPackages){
+        "{0}$seperator {1}$seperator {2}" -f $nugetPkg.ID,$nugetPkg.Version,$nugetPkg.NugetPackageKey | Write-Host -ForegroundColor Cyan
+    }
+
+    # assume that the .vstemplate files are contained under the same folder as templates.xml
+}
+return
+
+
+
 
 $allErrors += ValidateBaseTemplateId -template $template
 $allErrors += ValidateUnitTestIdFromUI -template $template
