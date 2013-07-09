@@ -233,6 +233,66 @@ function ValidateReferencedRules(){
         "Validating referenced rules finished" | Write-Verbose 
     }
 }
+function CreateNugetPackagesReport(){
+    $allNugetPackages = @()
+    # for templates.xml we can get NuGet packages from TemplateDefinition.Rules.Rule.AddNuGetPackage
+    $nugetPkgFromTemplatesXml = ($template.TemplateDefinition.Rules.Rule.AddNugetPackage)
+    foreach($nugetPkg in $nugetPkgFromTemplatesXml){
+        if(!($nugetPkg)){
+            continue
+        }
+
+        $info = New-Object System.Object
+        $info | Add-Member -type NoteProperty -name Source -value $templatePath
+        $info | Add-Member -type NoteProperty -name ID -value $nugetPkg.ID
+        $info | Add-Member -type NoteProperty -name Version -value $nugetPkg.Version
+        $info | Add-Member -type NoteProperty -name NugetPackageKey -value $nugetPkg.NugetPackageKey
+
+        # if the item has already been added skip it
+        if(!(HasNugetPkgBeenAddedToArray -allNugetPackages $allNugetPackages -nugetPkg $info)){
+            "Adding nuget package [{0}{1}]" -f $info.ID, $info.Version | Write-Verbose
+            $allNugetPackages += $info
+        }
+        else{
+            "Skipping nuget package [{0}{1}] because its a duplicate" -f $info.ID, $info.Version | Write-Verbose
+        }
+    }
+
+    # assume that the .vstemplate files are contained under the same folder as templates.xml
+    $vstemplateFiles = (Get-ChildItem -Path ((Get-Item $templatePath).Directory.FullName) -Include *.vstemplate -Recurse)
+    foreach($vsTemplateFile in $vstemplateFiles){
+        [xml]$vsTempXml=(Get-Content $vstemplateFile)
+        foreach($pkg in $vsTempXml.VSTemplate.WizardData.packages.package){            
+            $info = New-Object System.Object
+            $info | Add-Member -type NoteProperty -name Source -value $vsTemplateFile
+            $info | Add-Member -type NoteProperty -name ID -value $pkg.ID
+            $info | Add-Member -type NoteProperty -name Version -value $pkg.Version
+            $info | Add-Member -type NoteProperty -name NugetPackageKey -value "vstemplate"
+
+            if(!(HasNugetPkgBeenAddedToArray -allNugetPackages $allNugetPackages -nugetPkg $info)){
+                "Adding nuget package [{0}{1}]" -f $info.ID, $info.Version | Write-Verbose
+                $allNugetPackages += $info
+            }
+            else{
+                "Skipping nuget package [{0}{1}] because its a duplicate" -f $info.ID, $info.Version | Write-Verbose
+            }
+        }
+    }
+
+    $allNugetPackages = ($allNugetPackages | Sort-Object -Property ID)
+
+    "*****************************************************" | Write-Host
+    "                NuGet Packages" | Write-Host
+    "*****************************************************" | Write-Host
+
+    # print out all the nuget packages found
+    $seperator = ","
+    "ID$seperator Version" | Write-Host    
+    
+    foreach($nugetPkg in $allNugetPackages){
+        "{1}{0}{2}" -f $seperator, $nugetPkg.ID,$nugetPkg.Version | Write-Host -ForegroundColor Cyan
+    }    
+}
 function HasNugetPkgBeenAddedToArray(){
     param(
         [Parameter(Mandatory=$true)]
@@ -286,69 +346,6 @@ else{ "The file is valid based on the xsd provided" | Write-Host -ForegroundColo
 $allErrors = @()
 [xml]$template = Get-Content $templatePath
 
-
-if($reportNugetPackages){
-    $allNugetPackages = @()
-    # for templates.xml we can get NuGet packages from TemplateDefinition.Rules.Rule.AddNuGetPackage
-    $nugetPkgFromTemplatesXml = ($template.TemplateDefinition.Rules.Rule.AddNugetPackage)
-    foreach($nugetPkg in $nugetPkgFromTemplatesXml){
-        if(!($nugetPkg)){
-            continue
-        }
-
-        $info = New-Object System.Object
-        $info | Add-Member -type NoteProperty -name Source -value $templatePath
-        $info | Add-Member -type NoteProperty -name ID -value $nugetPkg.ID
-        $info | Add-Member -type NoteProperty -name Version -value $nugetPkg.Version
-        $info | Add-Member -type NoteProperty -name NugetPackageKey -value $nugetPkg.NugetPackageKey
-
-        # if the item has already been added skip it
-        if(!(HasNugetPkgBeenAddedToArray -allNugetPackages $allNugetPackages -nugetPkg $info)){
-            "Adding nuget package [{0}{1}]" -f $info.ID, $info.Version | Write-Verbose
-            $allNugetPackages += $info
-        }
-        else{
-            "Skipping nuget package [{0}{1}] because its a duplicate" -f $info.ID, $info.Version | Write-Verbose
-        }
-    }
-
-    $vstemplateFiles = (Get-ChildItem -Path ((Get-Item $templatePath).Directory.FullName) -Include *.vstemplate -Recurse)
-    foreach($vsTemplateFile in $vstemplateFiles){
-        [xml]$vsTempXml=(Get-Content $vstemplateFile)
-        foreach($pkg in $vsTempXml.VSTemplate.WizardData.packages.package){            
-            $info = New-Object System.Object
-            $info | Add-Member -type NoteProperty -name Source -value $vsTemplateFile
-            $info | Add-Member -type NoteProperty -name ID -value $pkg.ID
-            $info | Add-Member -type NoteProperty -name Version -value $pkg.Version
-            $info | Add-Member -type NoteProperty -name NugetPackageKey -value "vstemplate"
-
-            if(!(HasNugetPkgBeenAddedToArray -allNugetPackages $allNugetPackages -nugetPkg $info)){
-                "Adding nuget package [{0}{1}]" -f $info.ID, $info.Version | Write-Verbose
-                $allNugetPackages += $info
-            }
-            else{
-                "Skipping nuget package [{0}{1}] because its a duplicate" -f $info.ID, $info.Version | Write-Verbose
-            }
-        }
-    }
-
-    $allNugetPackages = ($allNugetPackages | Sort-Object -Property ID)
-
-    # print out all the nuget packages found
-    $seperator = ","
-    "ID$seperator Version" | Write-Host    
-    
-    foreach($nugetPkg in $allNugetPackages){
-        "{1}{0}{2}" -f $seperator, $nugetPkg.ID,$nugetPkg.Version | Write-Host -ForegroundColor Cyan
-    }
-
-    # assume that the .vstemplate files are contained under the same folder as templates.xml
-}
-return
-
-
-
-
 $allErrors += ValidateBaseTemplateId -template $template
 $allErrors += ValidateUnitTestIdFromUI -template $template
 $allErrors += ValidateVsTemplateExistsForBaseTemplate -template $template -templatePath $templatePath
@@ -360,6 +357,10 @@ if($allErrors.Count -gt 0){
     $allErrors | Write-Host -BackgroundColor Black -ForegroundColor Red
 }
 
+
+if($reportNugetPackages){
+    CreateNugetPackagesReport
+}
 
 #Remove-Module xml-helpers
 
