@@ -238,7 +238,7 @@ function HasNugetPkgBeenAddedToArray(){
         [Parameter(Mandatory=$true)]
         $allNugetPackages,
         [Parameter(Mandatory=$true)]
-        [hashtable]$nugetPkg
+        $nugetPkg
     )
 
     if($allNugetPackages.Count -le 0){
@@ -246,7 +246,7 @@ function HasNugetPkgBeenAddedToArray(){
     }
 
     # there is probably a better way to do this
-    if(($theArray | Where-Object {$_.ID -eq $nugetPkg.ID -and $_.Version -eq $nugetPkg.Version -and $_.NugetPackageKey -eq $nugetPkg.NugetPackageKey})){
+    if(($allNugetPackages | Where-Object {$_.ID -eq $nugetPkg.ID -and $_.Version -eq $nugetPkg.Version <#-and $_.NugetPackageKey -eq $nugetPkg.NugetPackageKey#>})){
         return $true
     }
     else{
@@ -296,16 +296,15 @@ if($reportNugetPackages){
             continue
         }
 
-        $info = @{}
-        $info.Source = $templatePath
-        $info.ID = $nugetPkg.ID
-        $info.Version = $nugetPkg.Version
-        $info.NugetPackageKey = $nugetPkg.NugetPackageKey
+        $info = New-Object System.Object
+        $info | Add-Member -type NoteProperty -name Source -value $templatePath
+        $info | Add-Member -type NoteProperty -name ID -value $nugetPkg.ID
+        $info | Add-Member -type NoteProperty -name Version -value $nugetPkg.Version
+        $info | Add-Member -type NoteProperty -name NugetPackageKey -value $nugetPkg.NugetPackageKey
 
         # if the item has already been added skip it
-
         if(!(HasNugetPkgBeenAddedToArray -allNugetPackages $allNugetPackages -nugetPkg $info)){
-            "Adding nuget package [{0}{1}] because its a duplicate" -f $info.ID, $info.Version | Write-Verbose
+            "Adding nuget package [{0}{1}]" -f $info.ID, $info.Version | Write-Verbose
             $allNugetPackages += $info
         }
         else{
@@ -313,14 +312,34 @@ if($reportNugetPackages){
         }
     }
 
+    $vstemplateFiles = (Get-ChildItem -Path ((Get-Item $templatePath).Directory.FullName) -Include *.vstemplate -Recurse)
+    foreach($vsTemplateFile in $vstemplateFiles){
+        [xml]$vsTempXml=(Get-Content $vstemplateFile)
+        foreach($pkg in $vsTempXml.VSTemplate.WizardData.packages.package){            
+            $info = New-Object System.Object
+            $info | Add-Member -type NoteProperty -name Source -value $vsTemplateFile
+            $info | Add-Member -type NoteProperty -name ID -value $pkg.ID
+            $info | Add-Member -type NoteProperty -name Version -value $pkg.Version
+            $info | Add-Member -type NoteProperty -name NugetPackageKey -value "vstemplate"
+
+            if(!(HasNugetPkgBeenAddedToArray -allNugetPackages $allNugetPackages -nugetPkg $info)){
+                "Adding nuget package [{0}{1}]" -f $info.ID, $info.Version | Write-Verbose
+                $allNugetPackages += $info
+            }
+            else{
+                "Skipping nuget package [{0}{1}] because its a duplicate" -f $info.ID, $info.Version | Write-Verbose
+            }
+        }
+    }
+
+    $allNugetPackages = ($allNugetPackages | Sort-Object -Property ID)
+
     # print out all the nuget packages found
     $seperator = ","
-    "ID$seperator Version$seperator NugetPackageKey" | Write-Host
-    
-    "Count before unique: [{0}]" -f $allNugetPackages.Count | Write-Host
+    "ID$seperator Version" | Write-Host    
     
     foreach($nugetPkg in $allNugetPackages){
-        "{0}$seperator {1}$seperator {2}" -f $nugetPkg.ID,$nugetPkg.Version,$nugetPkg.NugetPackageKey | Write-Host -ForegroundColor Cyan
+        "{1}{0}{2}" -f $seperator, $nugetPkg.ID,$nugetPkg.Version | Write-Host -ForegroundColor Cyan
     }
 
     # assume that the .vstemplate files are contained under the same folder as templates.xml
