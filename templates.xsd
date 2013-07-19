@@ -129,6 +129,35 @@
                           <xs:attribute name="NugetPackageKey" type="xs:string" use="required" />
                         </xs:complexType>
                       </xs:element>
+                      <xs:element name="AddNugetPackages">
+                        <xs:complexType>
+                          <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="Package">
+                              <xs:complexType>
+                                <xs:sequence>
+                                  <xs:element name="References">
+                                    <xs:complexType>
+                                      <xs:sequence>
+                                        <xs:element maxOccurs="unbounded" name="Reference">
+                                          <xs:complexType>
+                                            <xs:attribute name="Include" type="xs:string" use="required" />
+                                            <xs:attribute name="HintPath" type="xs:string" use="required" />
+                                          </xs:complexType>
+                                        </xs:element>
+                                      </xs:sequence>
+                                    </xs:complexType>
+                                  </xs:element>
+                                </xs:sequence>
+                                <xs:attribute name="ID" type="xs:string" use="required" />
+                                <xs:attribute name="Version" type="xs:string" use="required" />
+                              </xs:complexType>
+                            </xs:element>
+                          </xs:sequence>
+                          <xs:attribute name="NugetPackageKey" type="xs:string" use="required" />
+                          <xs:attribute name="SkipAssemblyReferences" type="xs:boolean" use="required" />
+                          <xs:attribute name="IsPreUnzipped" type="xs:boolean" use="required" />
+                        </xs:complexType>
+                      </xs:element>
                       <xs:element name="AddFolder">
                         <xs:complexType>
                           <xs:attribute name="Name" type="xs:string" use="required" />

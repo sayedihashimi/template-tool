@@ -237,6 +237,7 @@ function CreateNugetPackagesReport(){
     $allNugetPackages = @()
     # for templates.xml we can get NuGet packages from TemplateDefinition.Rules.Rule.AddNuGetPackage
     $nugetPkgFromTemplatesXml = ($template.TemplateDefinition.Rules.Rule.AddNugetPackage)
+    $nugetPkgFromTemplatesXml += ($template.TemplateDefinition.Rules.Rule.AddNugetPackages.Package)
     foreach($nugetPkg in $nugetPkgFromTemplatesXml){
         if(!($nugetPkg)){
             continue
